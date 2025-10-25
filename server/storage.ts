@@ -65,7 +65,14 @@ export class MemStorage implements IStorage {
     const existing = this.mediaItems.get(id);
     if (!existing) return undefined;
 
-    const updated: Media = { ...existing, ...updates };
+    const updated: Media = {
+      ...existing,
+      ...(updates.title !== undefined && { title: updates.title }),
+      ...(updates.type !== undefined && { type: updates.type }),
+      ...(updates.year !== undefined && { year: updates.year }),
+      ...(updates.coverUrl !== undefined && { coverUrl: updates.coverUrl }),
+      ...(updates.vibes !== undefined && { vibes: updates.vibes }),
+    };
     this.mediaItems.set(id, updated);
     return updated;
   }

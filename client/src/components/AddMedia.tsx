@@ -1,122 +1,206 @@
 import { useState } from "react";
-import { Search, Film, Tv, BookOpen, Loader2, Sparkles } from "lucide-react";
+import { Film, Tv, BookOpen, Loader2, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MediaType } from "./MediaCard";
 import { cn } from "@/lib/utils";
-
-interface SearchResult {
-  id: string;
-  title: string;
-  type: MediaType;
-  year?: number;
-  coverUrl?: string;
-}
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddMediaProps {
-  onAdd?: (result: SearchResult) => void;
+  onMediaAdded?: () => void;
 }
 
-export default function AddMedia({ onAdd }: AddMediaProps) {
-  const [query, setQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<MediaType | "all">("all");
-  const [isSearching, setIsSearching] = useState(false);
+export default function AddMedia({ onMediaAdded }: AddMediaProps) {
+  const [title, setTitle] = useState("");
+  const [selectedType, setSelectedType] = useState<MediaType>("movie");
+  const [year, setYear] = useState("");
+  const [vibeInput, setVibeInput] = useState("");
+  const [vibes, setVibes] = useState<string[]>([]);
+  const { toast } = useToast();
 
-  const types = [
-    { id: "all" as const, label: "All", icon: Search },
-    { id: "show" as const, label: "Shows", icon: Tv },
-    { id: "movie" as const, label: "Movies", icon: Film },
-    { id: "book" as const, label: "Books", icon: BookOpen },
+  const types: Array<{ id: MediaType; label: string; icon: typeof Tv }> = [
+    { id: "show", label: "TV Show", icon: Tv },
+    { id: "movie", label: "Movie", icon: Film },
+    { id: "book", label: "Book", icon: BookOpen },
   ];
 
-  const handleSearch = () => {
-    if (!query.trim()) return;
-    
-    console.log("Searching for:", query, "Type:", selectedType);
-    setIsSearching(true);
-    setTimeout(() => setIsSearching(false), 1000);
+  const addMutation = useMutation({
+    mutationFn: (data: { title: string; type: MediaType; year?: number; vibes: string[] }) =>
+      apiRequest("POST", "/api/media", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      setTitle("");
+      setYear("");
+      setVibes([]);
+      onMediaAdded?.();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add media",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddVibe = () => {
+    if (!vibeInput.trim()) return;
+    setVibes([...vibes, vibeInput.trim()]);
+    setVibeInput("");
+  };
+
+  const handleRemoveVibe = (index: number) => {
+    setVibes(vibes.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    addMutation.mutate({
+      title: title.trim(),
+      type: selectedType,
+      year: year ? parseInt(year) : undefined,
+      vibes,
+    });
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-y-auto pb-20">
       <div className="p-6 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-semibold">Add to Library</h1>
           <p className="text-sm text-muted-foreground">
-            Search for shows, movies, or books to add to your collection
+            Add shows, movies, or books to your collection
           </p>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {types.map((type) => {
-            const Icon = type.icon;
-            const isActive = selectedType === type.id;
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Type</label>
+            <div className="flex gap-2">
+              {types.map((type) => {
+                const Icon = type.icon;
+                const isActive = selectedType === type.id;
 
-            return (
-              <button
-                key={type.id}
-                onClick={() => setSelectedType(type.id)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors hover-elevate active-elevate-2 border",
-                  isActive
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background border-border"
-                )}
-                data-testid={`type-filter-${type.id}`}
-              >
-                <Icon className="w-4 h-4" />
-                {type.label}
-              </button>
-            );
-          })}
-        </div>
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setSelectedType(type.id)}
+                    className={cn(
+                      "flex-1 flex flex-col items-center gap-2 p-4 rounded-lg text-sm font-medium transition-colors hover-elevate active-elevate-2 border",
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-border"
+                    )}
+                    data-testid={`type-${type.id}`}
+                  >
+                    <Icon className="w-6 h-6" />
+                    {type.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <div className="space-y-2">
+            <label htmlFor="title" className="text-sm font-medium">
+              Title
+            </label>
             <Input
-              type="search"
-              placeholder="Search by title..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="pl-10 h-12 text-base"
-              data-testid="input-media-search"
+              id="title"
+              placeholder="Enter title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-12 text-base"
+              data-testid="input-title"
+              required
             />
           </div>
 
+          <div className="space-y-2">
+            <label htmlFor="year" className="text-sm font-medium">
+              Year (optional)
+            </label>
+            <Input
+              id="year"
+              type="number"
+              placeholder="e.g. 2024"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="h-12 text-base"
+              data-testid="input-year"
+              min="1900"
+              max="2100"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Vibe Tags (optional)</label>
+            {vibes.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {vibes.map((vibe, idx) => (
+                  <Badge key={idx} variant="outline" className="text-sm pr-1">
+                    {vibe}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveVibe(idx)}
+                      className="ml-2 hover-elevate rounded-full p-0.5"
+                      data-testid={`button-remove-vibe-${idx}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add a vibe (cozy, thrilling, etc.)"
+                value={vibeInput}
+                onChange={(e) => setVibeInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddVibe())}
+                className="h-10"
+                data-testid="input-vibe"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddVibe}
+                disabled={!vibeInput.trim()}
+                data-testid="button-add-vibe"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Add tags like: cozy, thrilling, lighthearted, mysterious, uplifting
+            </p>
+          </div>
+
           <Button
-            onClick={handleSearch}
-            disabled={!query.trim() || isSearching}
+            type="submit"
             className="w-full h-12"
-            data-testid="button-search"
+            disabled={!title.trim() || addMutation.isPending}
+            data-testid="button-submit"
           >
-            {isSearching ? (
+            {addMutation.isPending ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Searching...
+                Adding...
               </>
             ) : (
               <>
-                <Search className="w-5 h-5 mr-2" />
-                Search
+                <Plus className="w-5 h-5 mr-2" />
+                Add to Library
               </>
             )}
           </Button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 pb-20">
-        <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-          <Sparkles className="w-16 h-16 text-muted-foreground" />
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Start Searching</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Enter a title above to search for media. We'll find it and automatically
-              tag it with AI-generated vibe traits.
-            </p>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -28,6 +28,8 @@ export const media = pgTable("media", {
 
 export const insertMediaSchema = createInsertSchema(media).omit({
   id: true,
+}).extend({
+  type: z.enum(["show", "movie", "book"]),
 });
 
 export type InsertMedia = z.infer<typeof insertMediaSchema>;

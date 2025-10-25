@@ -1,9 +1,9 @@
-import { X, Film, Tv, BookOpen, Plus, Sparkles } from "lucide-react";
+import { X, Film, Tv, BookOpen, Plus } from "lucide-react";
 import { MediaItem } from "./MediaCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface MediaDetailModalProps {
   media: MediaItem;
@@ -26,24 +26,22 @@ export default function MediaDetailModal({
   const [vibes, setVibes] = useState(media.vibes);
   const [newVibe, setNewVibe] = useState("");
 
+  useEffect(() => {
+    setVibes(media.vibes);
+  }, [media.vibes]);
+
   const handleAddVibe = () => {
     if (!newVibe.trim()) return;
     const updated = [...vibes, newVibe.trim()];
     setVibes(updated);
     onUpdateVibes?.(media.id, updated);
     setNewVibe("");
-    console.log("Added vibe:", newVibe);
   };
 
   const handleRemoveVibe = (index: number) => {
     const updated = vibes.filter((_, i) => i !== index);
     setVibes(updated);
     onUpdateVibes?.(media.id, updated);
-    console.log("Removed vibe at index:", index);
-  };
-
-  const handleGenerateVibes = () => {
-    console.log("Generating AI vibes for:", media.title);
   };
 
   return (
@@ -94,18 +92,7 @@ export default function MediaDetailModal({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Vibe Tags</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateVibes}
-                data-testid="button-generate-vibes"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                AI Generate
-              </Button>
-            </div>
+            <h3 className="font-semibold">Vibe Tags</h3>
 
             <div className="flex flex-wrap gap-2">
               {vibes.map((vibe, idx) => (

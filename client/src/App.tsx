@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider, useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import BottomNavigation, { NavTab } from "./components/BottomNavigation";
 import MediaLibrary from "./components/MediaLibrary";
 import AddMedia from "./components/AddMedia";
@@ -10,74 +11,67 @@ import VibeFinder from "./components/VibeFinder";
 import ProfilePage from "./components/ProfilePage";
 import MediaDetailModal from "./components/MediaDetailModal";
 import { MediaItem } from "./components/MediaCard";
-import thrillerCover from "@assets/generated_images/Thriller_movie_cover_placeholder_31c2e25c.png";
-import bookCover from "@assets/generated_images/Fiction_book_cover_placeholder_657c3f32.png";
-import showCover from "@assets/generated_images/Comedy_show_cover_placeholder_b9616d13.png";
 
-const initialMockMedia: MediaItem[] = [
-  {
-    id: "1",
-    title: "The Dark Mystery",
-    type: "movie",
-    year: 2024,
-    coverUrl: thrillerCover,
-    vibes: ["Thrilling", "Mysterious", "Intense"],
-  },
-  {
-    id: "2",
-    title: "Cozy Autumn Reads",
-    type: "book",
-    year: 2023,
-    coverUrl: bookCover,
-    vibes: ["Cozy", "Thoughtful", "Relaxing"],
-  },
-  {
-    id: "3",
-    title: "Happy Days",
-    type: "show",
-    year: 2024,
-    coverUrl: showCover,
-    vibes: ["Lighthearted", "Uplifting", "Energetic"],
-  },
-  {
-    id: "4",
-    title: "Midnight Tales",
-    type: "book",
-    year: 2024,
-    vibes: ["Mysterious", "Thoughtful", "Intense"],
-  },
-  {
-    id: "5",
-    title: "Summer Adventures",
-    type: "show",
-    year: 2023,
-    vibes: ["Adventurous", "Energetic", "Uplifting"],
-  },
-  {
-    id: "6",
-    title: "Quiet Moments",
-    type: "movie",
-    year: 2024,
-    vibes: ["Cozy", "Relaxing", "Thoughtful"],
-  },
-];
-
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<NavTab>("library");
-  const [media, setMedia] = useState<MediaItem[]>(initialMockMedia);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const { toast } = useToast();
+
+  const { data: media = [], isLoading } = useQuery<MediaItem[]>({
+    queryKey: ["/api/media"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/media/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      toast({
+        title: "Media removed",
+        description: "The item has been removed from your library",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove media",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, vibes }: { id: string; vibes: string[] }) =>
+      apiRequest("PATCH", `/api/media/${id}`, { vibes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      toast({
+        title: "Vibes updated",
+        description: "Your vibe tags have been saved",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update vibes",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleRemoveMedia = (id: string) => {
-    setMedia(media.filter((m) => m.id !== id));
-    console.log("Removed media:", id);
+    deleteMutation.mutate(id);
   };
 
   const handleUpdateVibes = (mediaId: string, vibes: string[]) => {
-    setMedia(
-      media.map((m) =>
-        m.id === mediaId ? { ...m, vibes } : m
-      )
-    );
+    updateMutation.mutate({ id: mediaId, vibes });
+  };
+
+  const handleMediaAdded = () => {
+    setActiveTab("library");
+    toast({
+      title: "Media added",
+      description: "Successfully added to your library",
+    });
   };
 
   const mediaCount = {
@@ -86,36 +80,53 @@ function App() {
     books: media.filter((m) => m.type === "book").length,
   };
 
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading your library...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      <main className="flex-1 overflow-hidden">
+        {activeTab === "library" && (
+          <MediaLibrary
+            media={media}
+            onRemove={handleRemoveMedia}
+            onMediaClick={setSelectedMedia}
+            onAddClick={() => setActiveTab("add")}
+          />
+        )}
+        {activeTab === "add" && <AddMedia onMediaAdded={handleMediaAdded} />}
+        {activeTab === "vibe" && (
+          <VibeFinder media={media} onMediaClick={setSelectedMedia} />
+        )}
+        {activeTab === "profile" && <ProfilePage mediaCount={mediaCount} />}
+      </main>
+
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {selectedMedia && (
+        <MediaDetailModal
+          media={selectedMedia}
+          onClose={() => setSelectedMedia(null)}
+          onUpdateVibes={handleUpdateVibes}
+        />
+      )}
+    </div>
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="h-screen flex flex-col bg-background">
-          <main className="flex-1 overflow-hidden">
-            {activeTab === "library" && (
-              <MediaLibrary
-                media={media}
-                onRemove={handleRemoveMedia}
-                onMediaClick={setSelectedMedia}
-                onAddClick={() => setActiveTab("add")}
-              />
-            )}
-            {activeTab === "add" && <AddMedia />}
-            {activeTab === "vibe" && (
-              <VibeFinder media={media} onMediaClick={setSelectedMedia} />
-            )}
-            {activeTab === "profile" && <ProfilePage mediaCount={mediaCount} />}
-          </main>
-
-          <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-
-          {selectedMedia && (
-            <MediaDetailModal
-              media={selectedMedia}
-              onClose={() => setSelectedMedia(null)}
-              onUpdateVibes={handleUpdateVibes}
-            />
-          )}
-        </div>
+        <AppContent />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
