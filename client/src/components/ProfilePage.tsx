@@ -70,13 +70,6 @@ export default function ProfilePage({ mediaCount }: ProfilePageProps) {
               <ThemeToggle />
             </div>
           </Card>
-
-          <Card className="p-4 hover-elevate active-elevate-2 cursor-pointer">
-            <div className="flex items-center gap-3">
-              <Info className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-medium">About VibeMedia</span>
-            </div>
-          </Card>
         </div>
 
         <div className="pt-4">

@@ -50,7 +50,7 @@ export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) 
       onClick={() => onClick?.(media)}
       data-testid={`card-media-${media.id}`}
     >
-      <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden rounded-md m-1.5">
+      <div className="aspect-[16/9] bg-muted/30 relative overflow-hidden rounded-md m-1.5">
         {media.coverUrl ? (
           <img
             src={media.coverUrl}
