@@ -10,7 +10,7 @@ import AddMedia from "./components/AddMedia";
 import VibeFinder from "./components/VibeFinder";
 import ProfilePage from "./components/ProfilePage";
 import MediaDetailModal from "./components/MediaDetailModal";
-import { MediaItem } from "./components/MediaCard";
+import { MediaItem, MediaStatus } from "./components/MediaCard";
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<NavTab>("library");
@@ -40,19 +40,19 @@ function AppContent() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, vibes }: { id: string; vibes: string[] }) =>
-      apiRequest("PATCH", `/api/media/${id}`, { vibes }),
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<MediaItem> }) =>
+      apiRequest("PATCH", `/api/media/${id}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/media"] });
       toast({
-        title: "Vibes updated",
-        description: "Your vibe tags have been saved",
+        title: "Media updated",
+        description: "Your changes have been saved",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to update vibes",
+        description: "Failed to update media",
         variant: "destructive",
       });
     },
@@ -63,7 +63,11 @@ function AppContent() {
   };
 
   const handleUpdateVibes = (mediaId: string, vibes: string[]) => {
-    updateMutation.mutate({ id: mediaId, vibes });
+    updateMutation.mutate({ id: mediaId, updates: { vibes } });
+  };
+
+  const handleUpdateStatus = (mediaId: string, status: MediaStatus) => {
+    updateMutation.mutate({ id: mediaId, updates: { status } });
   };
 
   const handleMediaAdded = () => {
@@ -116,6 +120,7 @@ function AppContent() {
           media={selectedMedia}
           onClose={() => setSelectedMedia(null)}
           onUpdateVibes={handleUpdateVibes}
+          onUpdateStatus={handleUpdateStatus}
         />
       )}
     </div>

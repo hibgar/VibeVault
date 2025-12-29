@@ -21,6 +21,7 @@ export const media = pgTable("media", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   type: text("type").notNull(),
+  status: text("status").notNull().default("not_started"),
   year: integer("year"),
   coverUrl: text("cover_url"),
   vibes: text("vibes").array().notNull().default(sql`'{}'::text[]`),
@@ -30,6 +31,7 @@ export const insertMediaSchema = createInsertSchema(media).omit({
   id: true,
 }).extend({
   type: z.enum(["show", "movie", "book"]),
+  status: z.enum(["not_started", "in_progress", "completed"]),
 });
 
 export type InsertMedia = z.infer<typeof insertMediaSchema>;

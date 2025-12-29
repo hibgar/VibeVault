@@ -53,6 +53,7 @@ export class MemStorage implements IStorage {
       id,
       title: insertMedia.title,
       type: insertMedia.type,
+      status: insertMedia.status || "not_started",
       year: insertMedia.year ?? null,
       coverUrl: insertMedia.coverUrl ?? null,
       vibes: insertMedia.vibes || []
@@ -69,6 +70,7 @@ export class MemStorage implements IStorage {
       ...existing,
       ...(updates.title !== undefined && { title: updates.title }),
       ...(updates.type !== undefined && { type: updates.type }),
+      ...(updates.status !== undefined && { status: updates.status }),
       ...(updates.year !== undefined && { year: updates.year }),
       ...(updates.coverUrl !== undefined && { coverUrl: updates.coverUrl }),
       ...(updates.vibes !== undefined && { vibes: updates.vibes }),

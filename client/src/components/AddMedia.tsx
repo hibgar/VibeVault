@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Film, Tv, BookOpen, Loader2, Plus, X } from "lucide-react";
+import { Film, Tv, BookOpen, Loader2, Plus, X, CheckCircle2, PlayCircle, Circle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MediaType } from "./MediaCard";
+import { MediaType, MediaStatus } from "./MediaCard";
 import { cn } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,6 +16,7 @@ interface AddMediaProps {
 export default function AddMedia({ onMediaAdded }: AddMediaProps) {
   const [title, setTitle] = useState("");
   const [selectedType, setSelectedType] = useState<MediaType>("movie");
+  const [selectedStatus, setSelectedStatus] = useState<MediaStatus>("not_started");
   const [year, setYear] = useState("");
   const [vibeInput, setVibeInput] = useState("");
   const [vibes, setVibes] = useState<string[]>([]);
@@ -27,8 +28,14 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
     { id: "book", label: "Book", icon: BookOpen },
   ];
 
+  const statuses: Array<{ id: MediaStatus; label: string; icon: typeof Circle }> = [
+    { id: "not_started", label: "Not Started", icon: Circle },
+    { id: "in_progress", label: "In Progress", icon: PlayCircle },
+    { id: "completed", label: "Completed", icon: CheckCircle2 },
+  ];
+
   const addMutation = useMutation({
-    mutationFn: (data: { title: string; type: MediaType; year?: number; vibes: string[] }) =>
+    mutationFn: (data: { title: string; type: MediaType; status: MediaStatus; year?: number; vibes: string[] }) =>
       apiRequest("POST", "/api/media", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/media"] });
@@ -48,6 +55,10 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
 
   const handleAddVibe = () => {
     if (!vibeInput.trim()) return;
+    if (vibes.includes(vibeInput.trim())) {
+      setVibeInput("");
+      return;
+    }
     setVibes([...vibes, vibeInput.trim()]);
     setVibeInput("");
   };
@@ -63,142 +74,136 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
     addMutation.mutate({
       title: title.trim(),
       type: selectedType,
+      status: selectedStatus,
       year: year ? parseInt(year) : undefined,
       vibes,
     });
   };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-20">
-      <div className="p-6 space-y-6">
+    <div className="flex flex-col h-full overflow-y-auto pb-20 bg-background/50">
+      <div className="p-6 space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Add to Library</h1>
+          <h1 className="text-3xl font-bold tracking-tight">New Addition</h1>
           <p className="text-sm text-muted-foreground">
-            Add shows, movies, or books to your collection
+            Save a new show, movie, or book to your library
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Type</label>
-            <div className="flex gap-2">
-              {types.map((type) => {
-                const Icon = type.icon;
-                const isActive = selectedType === type.id;
-
-                return (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setSelectedType(type.id)}
-                    className={cn(
-                      "flex-1 flex flex-col items-center gap-2 p-4 rounded-lg text-sm font-medium transition-colors hover-elevate active-elevate-2 border",
-                      isActive
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border"
-                    )}
-                    data-testid={`type-${type.id}`}
-                  >
-                    <Icon className="w-6 h-6" />
-                    {type.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium">
-              Title
-            </label>
-            <Input
-              id="title"
-              placeholder="Enter title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="h-12 text-base"
-              data-testid="input-title"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="year" className="text-sm font-medium">
-              Year (optional)
-            </label>
-            <Input
-              id="year"
-              type="number"
-              placeholder="e.g. 2024"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="h-12 text-base"
-              data-testid="input-year"
-              min="1900"
-              max="2100"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Vibe Tags (optional)</label>
-            {vibes.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {vibes.map((vibe, idx) => (
-                  <Badge key={idx} variant="outline" className="text-sm pr-1">
-                    {vibe}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Category</label>
+              <div className="flex gap-2">
+                {types.map((type) => {
+                  const Icon = type.icon;
+                  const isActive = selectedType === type.id;
+                  return (
                     <button
+                      key={type.id}
                       type="button"
-                      onClick={() => handleRemoveVibe(idx)}
-                      className="ml-2 hover-elevate rounded-full p-0.5"
-                      data-testid={`button-remove-vibe-${idx}`}
+                      onClick={() => setSelectedType(type.id)}
+                      className={cn(
+                        "flex-1 flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border shadow-sm",
+                        isActive
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-card text-muted-foreground border-card-border hover:bg-muted/50"
+                      )}
                     >
-                      <X className="w-3 h-3" />
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[11px] font-bold uppercase">{type.label}</span>
                     </button>
-                  </Badge>
-                ))}
+                  );
+                })}
               </div>
-            )}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add a vibe (cozy, thrilling, etc.)"
-                value={vibeInput}
-                onChange={(e) => setVibeInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddVibe())}
-                className="h-10"
-                data-testid="input-vibe"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddVibe}
-                disabled={!vibeInput.trim()}
-                data-testid="button-add-vibe"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Add tags like: cozy, thrilling, lighthearted, mysterious, uplifting
-            </p>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Status</label>
+              <div className="flex gap-2">
+                {statuses.map((status) => {
+                  const Icon = status.icon;
+                  const isActive = selectedStatus === status.id;
+                  return (
+                    <button
+                      key={status.id}
+                      type="button"
+                      onClick={() => setSelectedStatus(status.id)}
+                      className={cn(
+                        "flex-1 flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border shadow-sm",
+                        isActive
+                          ? "bg-foreground text-background border-foreground"
+                          : "bg-card text-muted-foreground border-card-border hover:bg-muted/50"
+                      )}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[11px] font-bold uppercase">{status.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Title
+              </label>
+              <Input
+                id="title"
+                placeholder="What are we watching/reading?"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="h-12 bg-card border-card-border rounded-xl text-base shadow-sm px-4"
+                required
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Vibe Tags</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. cozy, intense, funny"
+                  value={vibeInput}
+                  onChange={(e) => setVibeInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddVibe())}
+                  className="h-11 bg-card border-card-border rounded-xl shadow-sm px-4"
+                />
+                <Button
+                  type="button"
+                  onClick={handleAddVibe}
+                  disabled={!vibeInput.trim()}
+                  className="h-11 w-11 rounded-xl"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
+              {vibes.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {vibes.map((vibe, idx) => (
+                    <Badge key={idx} variant="secondary" className="pl-3 pr-1 py-1 rounded-full text-xs font-medium border-none bg-primary/10 text-primary">
+                      {vibe}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVibe(idx)}
+                        className="ml-1.5 hover:bg-primary/20 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12"
+            className="w-full h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/20"
             disabled={!title.trim() || addMutation.isPending}
-            data-testid="button-submit"
           >
-            {addMutation.isPending ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className="w-5 h-5 mr-2" />
-                Add to Library
-              </>
-            )}
+            {addMutation.isPending ? "Saving..." : "Save to Library"}
           </Button>
         </form>
       </div>

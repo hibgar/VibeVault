@@ -12,6 +12,7 @@ import {
   Mountain,
   Moon,
   Sun,
+  Sparkles,
 } from "lucide-react";
 import VibeMoodCard from "./VibeMoodCard";
 import MediaCard, { MediaItem } from "./MediaCard";
@@ -42,17 +43,21 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<MediaItem[]>([]);
 
-  const handleMoodSelect = (moodId: string) => {
-    setSelectedMood(moodId);
+  // Get all unique vibes currently in the library
+  const availableVibes = Array.from(
+    new Set(media.flatMap((item) => item.vibes))
+  ).sort();
+
+  const handleMoodSelect = (mood: string) => {
+    setSelectedMood(mood);
     
     const filtered = media.filter((item) =>
-      item.vibes.some((vibe) =>
-        vibe.toLowerCase().includes(moodId.toLowerCase())
+      item.vibes.some((v) =>
+        v.toLowerCase() === mood.toLowerCase()
       )
     );
     
     setRecommendations(filtered);
-    console.log(`Finding ${moodId} vibes...`, filtered);
   };
 
   const handleReset = () => {
@@ -61,62 +66,60 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background/50">
       {!selectedMood ? (
         <div className="flex-1 overflow-y-auto pb-20">
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-8">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-semibold">What's Your Vibe?</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Your Library Vibes</h1>
               <p className="text-sm text-muted-foreground">
-                Tell us how you're feeling and we'll recommend something perfect
+                Pick a vibe from your collection to see what matches
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {moods.map((mood) => (
-                <VibeMoodCard
-                  key={mood.id}
-                  icon={mood.icon}
-                  label={mood.label}
-                  isSelected={false}
-                  onClick={() => handleMoodSelect(mood.id)}
-                />
-              ))}
-            </div>
+            {availableVibes.length === 0 ? (
+              <EmptyState
+                icon={Sparkles}
+                title="No vibes found"
+                description="Add some vibe tags to your media items first!"
+              />
+            ) : (
+              <div className="flex flex-wrap gap-3 justify-center">
+                {availableVibes.map((vibe) => (
+                  <button
+                    key={vibe}
+                    onClick={() => handleMoodSelect(vibe)}
+                    className="px-6 py-3 rounded-2xl bg-card border border-card-border shadow-sm hover-elevate active-elevate-2 text-sm font-semibold text-primary transition-all"
+                  >
+                    {vibe}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : (
         <div className="flex flex-col h-full">
-          <div className="p-6 pb-4 border-b border-border space-y-3">
+          <div className="p-6 pb-4 bg-background/80 backdrop-blur-md border-b border-border space-y-1">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-semibold">
-                  {moods.find((m) => m.id === selectedMood)?.label} Vibes
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {recommendations.length} {recommendations.length === 1 ? "match" : "matches"} found
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleReset} data-testid="button-reset-vibe">
-                Change Vibe
+              <h1 className="text-2xl font-bold">
+                {selectedMood} <span className="text-muted-foreground font-medium text-lg ml-1">Vibes</span>
+              </h1>
+              <Button variant="outline" size="sm" className="rounded-full px-4 h-8 text-[11px] font-bold uppercase" onClick={handleReset}>
+                Back
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
+              {recommendations.length} {recommendations.length === 1 ? "match" : "matches"} found
+            </p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 pb-20">
-            {recommendations.length === 0 ? (
-              <EmptyState
-                icon={moods.find((m) => m.id === selectedMood)?.icon || Heart}
-                title="No matches found"
-                description={`We couldn't find any media matching your ${selectedMood} vibe. Try adding more to your library or selecting a different mood.`}
-              />
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {recommendations.map((item) => (
-                  <MediaCard key={item.id} media={item} onClick={onMediaClick} />
-                ))}
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto p-4 pb-20">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {recommendations.map((item) => (
+                <MediaCard key={item.id} media={item} onClick={onMediaClick} />
+              ))}
+            </div>
           </div>
         </div>
       )}
