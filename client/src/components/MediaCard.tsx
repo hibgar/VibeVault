@@ -36,9 +36,9 @@ const statusColors = {
 };
 
 const typeColors = {
-  movie: "bg-primary/20 text-primary border-primary/20",
+  movie: "bg-primary/10 text-primary border-primary/20",
   show: "bg-primary/10 text-primary border-primary/20",
-  book: "bg-primary/30 text-primary border-primary/20",
+  book: "bg-primary/10 text-primary border-primary/20",
 };
 
 export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) {
@@ -50,7 +50,7 @@ export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) 
       onClick={() => onClick?.(media)}
       data-testid={`card-media-${media.id}`}
     >
-      <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden rounded-md m-2">
+      <div className="aspect-[4/5] bg-muted/30 relative overflow-hidden rounded-md m-1.5">
         {media.coverUrl ? (
           <img
             src={media.coverUrl}
@@ -59,14 +59,14 @@ export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) 
           />
         ) : (
           <div className={cn("w-full h-full flex items-center justify-center", typeColors[media.type])}>
-            <Icon className="w-8 h-8 opacity-40" />
+            <Icon className="w-6 h-6 opacity-40" />
           </div>
         )}
         {onRemove && (
           <Button
             size="icon"
             variant="secondary"
-            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7"
+            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6"
             onClick={(e) => {
               e.stopPropagation();
               onRemove(media.id);
@@ -77,30 +77,18 @@ export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) 
           </Button>
         )}
       </div>
-      <div className="px-3 pb-3 space-y-1.5">
-        <h3 className="font-semibold text-sm line-clamp-1 leading-tight" data-testid={`text-title-${media.id}`}>
+      <div className="px-2 pb-2 space-y-1">
+        <h3 className="font-semibold text-xs line-clamp-1 leading-tight" data-testid={`text-title-${media.id}`}>
           {media.title}
         </h3>
         <div className="flex flex-wrap gap-1">
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 font-bold uppercase", typeColors[media.type])}>
+          <Badge variant="outline" className={cn("text-[8px] px-1 py-0 h-3.5 font-bold uppercase", typeColors[media.type])}>
             {media.type}
           </Badge>
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 font-bold uppercase", statusColors[media.status])}>
+          <Badge variant="outline" className={cn("text-[8px] px-1 py-0 h-3.5 font-bold uppercase", statusColors[media.status])}>
             {media.status.replace("_", " ")}
           </Badge>
         </div>
-        {media.vibes.length > 0 && (
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide pt-0.5">
-            {media.vibes.slice(0, 2).map((vibe, idx) => (
-              <span
-                key={idx}
-                className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted/50 px-1 rounded"
-              >
-                #{vibe}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </Card>
   );

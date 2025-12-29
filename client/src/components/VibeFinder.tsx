@@ -115,7 +115,7 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 pb-20">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {recommendations.map((item) => (
                 <MediaCard key={item.id} media={item} onClick={onMediaClick} />
               ))}

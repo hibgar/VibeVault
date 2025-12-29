@@ -114,7 +114,7 @@ export default function MediaLibrary({ media, onRemove, onMediaClick, onAddClick
             }}
           />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pb-20">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pb-20">
             {filteredMedia.map((item) => (
               <MediaCard
                 key={item.id}
