@@ -36,9 +36,9 @@ const statusColors = {
 };
 
 const typeColors = {
-  movie: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
-  show: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-  book: "bg-teal-500/10 text-teal-600 border-teal-500/20",
+  movie: "bg-primary/20 text-primary border-primary/20",
+  show: "bg-primary/10 text-primary border-primary/20",
+  book: "bg-primary/30 text-primary border-primary/20",
 };
 
 export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) {
