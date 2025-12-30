@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { QueryClientProvider, useQuery, useMutation } from "@tanstack/react-query";
+import {
+  QueryClientProvider,
+  useQuery,
+  useMutation,
+} from "@tanstack/react-query";
 import { queryClient, apiRequest } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,14 +15,71 @@ import VibeFinder from "./components/VibeFinder";
 import ProfilePage from "./components/ProfilePage";
 import MediaDetailModal from "./components/MediaDetailModal";
 import { MediaItem, MediaStatus } from "./components/MediaCard";
+import { supabase } from "./lib/supabaseClient";
+import { useEffect } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { Auth } from "./components/Auth";
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<NavTab>("library");
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const { toast } = useToast();
 
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      if (error) console.error(error);
+      setSession(data.session);
+      setAuthLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+      },
+    );
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="h-screen flex items-center justify-center p-6">
+        <Auth />
+      </div>
+    );
+  }
+
+  const userId = session.user.id;
+
   const { data: media = [], isLoading } = useQuery<MediaItem[]>({
-    queryKey: ["/api/media"],
+    queryKey: ["/api/media", userId],
+    queryFn: async () => {
+      const res = await apiRequest(
+        "GET",
+        `/api/media?userId=${encodeURIComponent(userId)}`,
+      );
+      return await res.json();
+    },
   });
 
   const deleteMutation = useMutation({
@@ -40,8 +101,13 @@ function AppContent() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<MediaItem> }) =>
-      apiRequest("PATCH", `/api/media/${id}`, updates),
+    mutationFn: ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<MediaItem>;
+    }) => apiRequest("PATCH", `/api/media/${id}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/media"] });
       toast({
@@ -89,7 +155,9 @@ function AppContent() {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading your library...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading your library...
+          </p>
         </div>
       </div>
     );
