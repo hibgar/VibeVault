@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { QueryClientProvider, useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import {
+  QueryClientProvider,
+  useQuery,
+  useMutation,
+} from "@tanstack/react-query";
 import { queryClient, apiRequest } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,10 +14,32 @@ import AddMedia from "./components/AddMedia";
 import VibeFinder from "./components/VibeFinder";
 import ProfilePage from "./components/ProfilePage";
 import MediaDetailModal from "./components/MediaDetailModal";
-import AuthScreen from "./components/AuthScreen";
+import AuthScreen from "@/components/AuthScreen";
 import { MediaItem, MediaStatus } from "./components/MediaCard";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "./lib/supabaseClient";
 
 function AppContent() {
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setAuthLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  if (authLoading) return <div className="h-screen flex items-center justify-center">Checking session…</div>;
+  if (!session) return <div className="h-screen flex items-center justify-center p-6"><AuthScreen /></div>;
+
+  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem("vibemedia_auth") === "true";
   });
@@ -45,8 +71,13 @@ function AppContent() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<MediaItem> }) =>
-      apiRequest("PATCH", `/api/media/${id}`, updates),
+    mutationFn: ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<MediaItem>;
+    }) => apiRequest("PATCH", `/api/media/${id}`, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/media"] });
       toast({
@@ -98,7 +129,9 @@ function AppContent() {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading your library...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading your library...
+          </p>
         </div>
       </div>
     );
@@ -120,12 +153,12 @@ function AppContent() {
           <VibeFinder media={media} onMediaClick={setSelectedMedia} />
         )}
         {activeTab === "profile" && (
-          <ProfilePage 
-            mediaCount={mediaCount} 
+          <ProfilePage
+            mediaCount={mediaCount}
             onLogout={() => {
               localStorage.removeItem("vibemedia_auth");
               setIsAuthenticated(false);
-            }} 
+            }}
           />
         )}
       </main>

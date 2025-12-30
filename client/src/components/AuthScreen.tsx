@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { PiTreasureChestFill } from "react-icons/pi";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AuthScreenProps {
-  onAuthenticated: () => void;
+  onAuthenticated?: () => void;
 }
 
 export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
@@ -45,18 +46,38 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       return;
     }
 
-    // Simulating backend delay
-    setTimeout(() => {
-      localStorage.setItem("vibemedia_auth", "true");
-      onAuthenticated();
+    try {
+      const { error } = isLogin
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        toast({
+          title: "Authentication failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      onAuthenticated?.(); // optional, but keeps your existing flow
+
       toast({
         title: isLogin ? "Welcome back!" : "Account created",
         description: isLogin
           ? "Successfully logged in."
-          : "Welcome to VibeMedia!",
+          : "Welcome to VibeVault!",
       });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err?.message ?? "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
