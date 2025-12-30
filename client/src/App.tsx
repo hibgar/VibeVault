@@ -1,13 +1,18 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   QueryClientProvider,
-  useQuery,
   useMutation,
+  useQuery,
 } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "./lib/queryClient";
+import type { Session } from "@supabase/supabase-js";
+
+import { queryClient } from "./lib/queryClient";
+import { supabase } from "./lib/supabaseClient";
+
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+
 import BottomNavigation, { NavTab } from "./components/BottomNavigation";
 import MediaLibrary from "./components/MediaLibrary";
 import AddMedia from "./components/AddMedia";
@@ -15,17 +20,21 @@ import VibeFinder from "./components/VibeFinder";
 import ProfilePage from "./components/ProfilePage";
 import MediaDetailModal from "./components/MediaDetailModal";
 import AuthScreen from "@/components/AuthScreen";
+
 import { MediaItem, MediaStatus } from "./components/MediaCard";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "./lib/supabaseClient";
 
 function AppContent() {
+  const { toast } = useToast();
 
+  // --- Auth session (Supabase is source of truth) ---
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
       setSession(data.session);
       setAuthLoading(false);
     });
@@ -34,97 +43,148 @@ function AppContent() {
       setSession(session);
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
-  if (authLoading) return <div className="h-screen flex items-center justify-center">Checking session…</div>;
-  if (!session) return <div className="h-screen flex items-center justify-center p-6"><AuthScreen /></div>;
 
-  
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem("vibemedia_auth") === "true";
-  });
+  // --- UI state ---
   const [activeTab, setActiveTab] = useState<NavTab>("library");
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
-  const { toast } = useToast();
 
-  const { data: media = [], isLoading } = useQuery<MediaItem[]>({
-    queryKey: ["/api/media"],
-    enabled: isAuthenticated,
+  const userId = session?.user.id;
+
+  // --- Data: fetch media from Supabase ---
+  const { data: media = [], isLoading: mediaLoading } = useQuery<MediaItem[]>({
+    queryKey: ["media_items", userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("media_items")
+        .select("id,title,type,status,year,cover_url,vibes")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return (data ?? []).map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        type: row.type,
+        status: row.status,
+        year: row.year ?? undefined,
+        coverUrl: row.cover_url ?? undefined,
+        vibes: row.vibes ?? [],
+      })) as MediaItem[];
+    },
   });
 
+  // --- Mutations: delete/update in Supabase ---
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/media/${id}`),
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("media_items")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      queryClient.invalidateQueries({ queryKey: ["media_items", userId] });
       toast({
         title: "Media removed",
         description: "The item has been removed from your library",
       });
     },
-    onError: () => {
+    onError: (e: any) => {
       toast({
         title: "Error",
-        description: "Failed to remove media",
+        description: e?.message ?? "Failed to remove media",
         variant: "destructive",
       });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       updates,
     }: {
       id: string;
       updates: Partial<MediaItem>;
-    }) => apiRequest("PATCH", `/api/media/${id}`, updates),
+    }) => {
+      // Map camelCase -> snake_case for DB columns
+      const payload: any = { ...updates };
+      if ("coverUrl" in payload) {
+        payload.cover_url = payload.coverUrl;
+        delete payload.coverUrl;
+      }
+
+      const { error } = await supabase
+        .from("media_items")
+        .update(payload)
+        .eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      queryClient.invalidateQueries({ queryKey: ["media_items", userId] });
       toast({
         title: "Media updated",
         description: "Your changes have been saved",
       });
     },
-    onError: () => {
+    onError: (e: any) => {
       toast({
         title: "Error",
-        description: "Failed to update media",
+        description: e?.message ?? "Failed to update media",
         variant: "destructive",
       });
     },
   });
 
-  const handleRemoveMedia = (id: string) => {
-    deleteMutation.mutate(id);
-  };
-
-  const handleUpdateVibes = (mediaId: string, vibes: string[]) => {
+  const handleRemoveMedia = (id: string) => deleteMutation.mutate(id);
+  const handleUpdateVibes = (mediaId: string, vibes: string[]) =>
     updateMutation.mutate({ id: mediaId, updates: { vibes } });
-  };
-
-  const handleUpdateStatus = (mediaId: string, status: MediaStatus) => {
+  const handleUpdateStatus = (mediaId: string, status: MediaStatus) =>
     updateMutation.mutate({ id: mediaId, updates: { status } });
-  };
 
   const handleMediaAdded = () => {
     setActiveTab("library");
+    // AddMedia will insert; we just refresh list
+    queryClient.invalidateQueries({ queryKey: ["media_items", userId] });
     toast({
       title: "Media added",
       description: "Successfully added to your library",
     });
   };
 
-  const mediaCount = {
-    shows: media.filter((m) => m.type === "show").length,
-    movies: media.filter((m) => m.type === "movie").length,
-    books: media.filter((m) => m.type === "book").length,
-  };
+  const mediaCount = useMemo(
+    () => ({
+      shows: media.filter((m) => m.type === "show").length,
+      movies: media.filter((m) => m.type === "movie").length,
+      books: media.filter((m) => m.type === "book").length,
+    }),
+    [media],
+  );
 
-  if (!isAuthenticated) {
-    return <AuthScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+  // --- Rendering gates (AFTER hooks are declared) ---
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        Checking session…
+      </div>
+    );
   }
 
-  if (isLoading) {
+  if (!session) {
+    // Your AuthScreen expects onAuthenticated — pass a no-op
+    return (
+      <div className="h-screen flex items-center justify-center p-6">
+        <AuthScreen onAuthenticated={() => {}} />
+      </div>
+    );
+  }
+
+  if (mediaLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center space-y-2">
@@ -148,16 +208,22 @@ function AppContent() {
             onAddClick={() => setActiveTab("add")}
           />
         )}
-        {activeTab === "add" && <AddMedia onMediaAdded={handleMediaAdded} />}
+
+        {activeTab === "add" && (
+          <AddMedia userId={session.user.id} onMediaAdded={handleMediaAdded} />
+        )}
+
         {activeTab === "vibe" && (
           <VibeFinder media={media} onMediaClick={setSelectedMedia} />
         )}
+
         {activeTab === "profile" && (
           <ProfilePage
             mediaCount={mediaCount}
-            onLogout={() => {
-              localStorage.removeItem("vibemedia_auth");
-              setIsAuthenticated(false);
+            onLogout={async () => {
+              await supabase.auth.signOut();
+              setSelectedMedia(null);
+              setActiveTab("library");
             }}
           />
         )}

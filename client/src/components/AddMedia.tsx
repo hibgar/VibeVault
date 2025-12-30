@@ -1,22 +1,34 @@
 import { useState } from "react";
-import { Film, Tv, BookOpen, Loader2, Plus, X, CheckCircle2, PlayCircle, Circle } from "lucide-react";
+import {
+  Film,
+  Tv,
+  BookOpen,
+  Plus,
+  X,
+  CheckCircle2,
+  PlayCircle,
+  Circle,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MediaType, MediaStatus } from "./MediaCard";
 import { cn } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AddMediaProps {
+  userId: string;
   onMediaAdded?: () => void;
 }
 
-export default function AddMedia({ onMediaAdded }: AddMediaProps) {
+export default function AddMedia({ userId, onMediaAdded }: AddMediaProps) {
   const [title, setTitle] = useState("");
   const [selectedType, setSelectedType] = useState<MediaType>("movie");
-  const [selectedStatus, setSelectedStatus] = useState<MediaStatus>("not_started");
+  const [selectedStatus, setSelectedStatus] =
+    useState<MediaStatus>("not_started");
   const [year, setYear] = useState("");
   const [vibeInput, setVibeInput] = useState("");
   const [vibes, setVibes] = useState<string[]>([]);
@@ -28,38 +40,71 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
     { id: "book", label: "Book", icon: BookOpen },
   ];
 
-  const statuses: Array<{ id: MediaStatus; label: string; icon: typeof Circle }> = [
+  const statuses: Array<{
+    id: MediaStatus;
+    label: string;
+    icon: typeof Circle;
+  }> = [
     { id: "not_started", label: "Not Started", icon: Circle },
     { id: "in_progress", label: "In Progress", icon: PlayCircle },
     { id: "completed", label: "Completed", icon: CheckCircle2 },
   ];
 
   const addMutation = useMutation({
-    mutationFn: (data: { title: string; type: MediaType; status: MediaStatus; year?: number; vibes: string[] }) =>
-      apiRequest("POST", "/api/media", data),
+    mutationFn: async (data: {
+      title: string;
+      type: MediaType;
+      status: MediaStatus;
+      year?: number;
+      vibes: string[];
+    }) => {
+      // Ensure userId exists (App should only render this when logged in)
+      if (!userId) throw new Error("Not authenticated.");
+
+      const { error } = await supabase.from("media_items").insert({
+        user_id: userId,
+        title: data.title,
+        type: data.type,
+        status: data.status,
+        year: data.year ?? null,
+        cover_url: null,
+        vibes: data.vibes,
+      });
+
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      queryClient.invalidateQueries({ queryKey: ["media_items", userId] });
+
       setTitle("");
       setYear("");
+      setVibeInput("");
       setVibes([]);
+
+      toast({
+        title: "Saved!",
+        description: "Added to your library.",
+      });
+
       onMediaAdded?.();
     },
-    onError: () => {
+    onError: (e: any) => {
       toast({
         title: "Error",
-        description: "Failed to add media",
+        description: e?.message ?? "Failed to add media",
         variant: "destructive",
       });
     },
   });
 
   const handleAddVibe = () => {
-    if (!vibeInput.trim()) return;
-    if (vibes.includes(vibeInput.trim())) {
+    const v = vibeInput.trim();
+    if (!v) return;
+    if (vibes.includes(v)) {
       setVibeInput("");
       return;
     }
-    setVibes([...vibes, vibeInput.trim()]);
+    setVibes([...vibes, v]);
     setVibeInput("");
   };
 
@@ -93,7 +138,9 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="space-y-4">
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Category</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Category
+              </label>
               <div className="flex gap-2">
                 {types.map((type) => {
                   const Icon = type.icon;
@@ -107,11 +154,13 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
                         "flex-1 flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border shadow-sm",
                         isActive
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card text-muted-foreground border-card-border hover:bg-muted/50"
+                          : "bg-card text-muted-foreground border-card-border hover:bg-muted/50",
                       )}
                     >
                       <Icon className="w-5 h-5" />
-                      <span className="text-[11px] font-bold uppercase">{type.label}</span>
+                      <span className="text-[11px] font-bold uppercase">
+                        {type.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -119,7 +168,9 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Status</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Status
+              </label>
               <div className="flex gap-2">
                 {statuses.map((status) => {
                   const Icon = status.icon;
@@ -133,11 +184,13 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
                         "flex-1 flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border shadow-sm",
                         isActive
                           ? "bg-foreground text-background border-foreground"
-                          : "bg-card text-muted-foreground border-card-border hover:bg-muted/50"
+                          : "bg-card text-muted-foreground border-card-border hover:bg-muted/50",
                       )}
                     >
                       <Icon className="w-5 h-5" />
-                      <span className="text-[11px] font-bold uppercase">{status.label}</span>
+                      <span className="text-[11px] font-bold uppercase">
+                        {status.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -147,7 +200,10 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="title" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              <label
+                htmlFor="title"
+                className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1"
+              >
                 Title
               </label>
               <Input
@@ -161,13 +217,17 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Vibe Tags</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                Vibe Tags
+              </label>
               <div className="flex gap-2">
                 <Input
                   placeholder="e.g. cozy, intense, funny"
                   value={vibeInput}
                   onChange={(e) => setVibeInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddVibe())}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), handleAddVibe())
+                  }
                   className="h-11 bg-card border-card-border rounded-xl shadow-sm px-4"
                 />
                 <Button
@@ -179,10 +239,15 @@ export default function AddMedia({ onMediaAdded }: AddMediaProps) {
                   <Plus className="w-5 h-5" />
                 </Button>
               </div>
+
               {vibes.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1">
                   {vibes.map((vibe, idx) => (
-                    <Badge key={idx} variant="secondary" className="pl-3 pr-1 py-1 rounded-full text-xs font-medium border-none bg-primary/10 text-primary">
+                    <Badge
+                      key={idx}
+                      variant="secondary"
+                      className="pl-3 pr-1 py-1 rounded-full text-xs font-medium border-none bg-primary/10 text-primary"
+                    >
                       {vibe}
                       <button
                         type="button"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Heart,
   Zap,
@@ -13,56 +13,57 @@ import {
   Moon,
   Sun,
   Sparkles,
+  Filter,
 } from "lucide-react";
 import VibeMoodCard from "./VibeMoodCard";
-import MediaCard, { MediaItem } from "./MediaCard";
+import MediaCard, { MediaItem, MediaStatus } from "./MediaCard";
 import { Button } from "@/components/ui/button";
 import EmptyState from "./EmptyState";
+import { cn } from "@/lib/utils";
 
 interface VibeFinderProps {
   media: MediaItem[];
   onMediaClick?: (media: MediaItem) => void;
 }
 
-const moods = [
-  { id: "cozy", label: "Cozy", icon: Heart },
-  { id: "intense", label: "Intense", icon: Zap },
-  { id: "lighthearted", label: "Lighthearted", icon: Smile },
-  { id: "thoughtful", label: "Thoughtful", icon: Brain },
-  { id: "thrilling", label: "Thrilling", icon: Flame },
-  { id: "relaxing", label: "Relaxing", icon: Cloud },
-  { id: "inspiring", label: "Inspiring", icon: Lightbulb },
-  { id: "escapist", label: "Escapist", icon: Music },
-  { id: "energetic", label: "Energetic", icon: Coffee },
-  { id: "adventurous", label: "Adventurous", icon: Mountain },
-  { id: "mysterious", label: "Mysterious", icon: Moon },
-  { id: "uplifting", label: "Uplifting", icon: Sun },
+const statusFilters: { id: MediaStatus | "all"; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "completed", label: "Completed" },
+  { id: "in_progress", label: "In Progress" },
+  { id: "not_started", label: "Not Started" },
 ];
 
 export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<MediaItem[]>([]);
+  const [statusFilter, setStatusFilter] = useState<MediaStatus | "all">("all");
 
   // Get all unique vibes currently in the library
-  const availableVibes = Array.from(
-    new Set(media.flatMap((item) => item.vibes))
-  ).sort();
+  const availableVibes = useMemo(() => {
+    return Array.from(
+      new Set(media.flatMap((item) => item.vibes))
+    ).sort();
+  }, [media]);
+
+  const filteredRecommendations = useMemo(() => {
+    if (!selectedMood) return [];
+    
+    return media.filter((item) => {
+      const matchesMood = item.vibes.some((v) =>
+        v.toLowerCase() === selectedMood.toLowerCase()
+      );
+      const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+      return matchesMood && matchesStatus;
+    });
+  }, [media, selectedMood, statusFilter]);
 
   const handleMoodSelect = (mood: string) => {
     setSelectedMood(mood);
-    
-    const filtered = media.filter((item) =>
-      item.vibes.some((v) =>
-        v.toLowerCase() === mood.toLowerCase()
-      )
-    );
-    
-    setRecommendations(filtered);
+    setStatusFilter("all");
   };
 
   const handleReset = () => {
     setSelectedMood(null);
-    setRecommendations([]);
+    setStatusFilter("all");
   };
 
   return (
@@ -100,7 +101,7 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
         </div>
       ) : (
         <div className="flex flex-col h-full">
-          <div className="p-6 pb-4 bg-background/80 backdrop-blur-md border-b border-border space-y-1">
+          <div className="p-6 pb-4 bg-background/80 backdrop-blur-md border-b border-border space-y-4">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold">
                 {selectedMood} <span className="text-muted-foreground font-medium text-lg ml-1">Vibes</span>
@@ -109,17 +110,42 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
                 Back
               </Button>
             </div>
+            
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              {statusFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => setStatusFilter(filter.id)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap transition-all border",
+                    statusFilter === filter.id
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                  )}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
             <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
-              {recommendations.length} {recommendations.length === 1 ? "match" : "matches"} found
+              {filteredRecommendations.length} {filteredRecommendations.length === 1 ? "match" : "matches"} found
             </p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 pb-20">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {recommendations.map((item) => (
-                <MediaCard key={item.id} media={item} onClick={onMediaClick} />
-              ))}
-            </div>
+            {filteredRecommendations.length === 0 ? (
+              <div className="h-full flex items-center justify-center py-12">
+                <p className="text-sm text-muted-foreground">No matches for this filter</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {filteredRecommendations.map((item) => (
+                  <MediaCard key={item.id} media={item} onClick={onMediaClick} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
