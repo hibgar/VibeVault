@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { SiTarget } from "react-icons/si";
+import { PiTreasureChestFill } from "react-icons/pi";
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -51,7 +51,9 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       onAuthenticated();
       toast({
         title: isLogin ? "Welcome back!" : "Account created",
-        description: isLogin ? "Successfully logged in." : "Welcome to VibeMedia!",
+        description: isLogin
+          ? "Successfully logged in."
+          : "Welcome to VibeMedia!",
       });
       setLoading(false);
     }, 1000);
@@ -63,12 +65,14 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
-              <SiTarget className="w-10 h-10" />
+              <PiTreasureChestFill className="w-10 h-10" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">VibeMedia</h1>
+          <h1 className="text-3xl font-bold tracking-tight">VibeVault</h1>
           <p className="text-muted-foreground text-sm">
-            {isLogin ? "Welcome back! Please enter your details." : "Join us to start tracking your media vibe."}
+            {isLogin
+              ? "Welcome back! Please enter your details."
+              : "Join us to start tracking your media vibe."}
           </p>
         </div>
 
@@ -97,11 +101,18 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
               data-testid="input-password"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading} data-testid="button-auth-submit">
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading}
+            data-testid="button-auth-submit"
+          >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : isLogin ? (
+              "Sign In"
             ) : (
-              isLogin ? "Sign In" : "Sign Up"
+              "Sign Up"
             )}
           </Button>
         </form>
@@ -113,7 +124,9 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             className="text-sm text-primary hover:underline font-medium"
             data-testid="button-auth-toggle"
           >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            {isLogin
+              ? "Don't have an account? Sign up"
+              : "Already have an account? Sign in"}
           </button>
         </div>
       </Card>
