@@ -10,15 +10,20 @@ import AddMedia from "./components/AddMedia";
 import VibeFinder from "./components/VibeFinder";
 import ProfilePage from "./components/ProfilePage";
 import MediaDetailModal from "./components/MediaDetailModal";
+import AuthScreen from "./components/AuthScreen";
 import { MediaItem, MediaStatus } from "./components/MediaCard";
 
 function AppContent() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem("vibemedia_auth") === "true";
+  });
   const [activeTab, setActiveTab] = useState<NavTab>("library");
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const { toast } = useToast();
 
   const { data: media = [], isLoading } = useQuery<MediaItem[]>({
     queryKey: ["/api/media"],
+    enabled: isAuthenticated,
   });
 
   const deleteMutation = useMutation({
@@ -84,6 +89,10 @@ function AppContent() {
     books: media.filter((m) => m.type === "book").length,
   };
 
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -110,7 +119,15 @@ function AppContent() {
         {activeTab === "vibe" && (
           <VibeFinder media={media} onMediaClick={setSelectedMedia} />
         )}
-        {activeTab === "profile" && <ProfilePage mediaCount={mediaCount} />}
+        {activeTab === "profile" && (
+          <ProfilePage 
+            mediaCount={mediaCount} 
+            onLogout={() => {
+              localStorage.removeItem("vibemedia_auth");
+              setIsAuthenticated(false);
+            }} 
+          />
+        )}
       </main>
 
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />

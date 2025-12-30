@@ -68,7 +68,7 @@ export default function MediaDetailModal({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 z-10 rounded-full bg-background/50 backdrop-blur-md"
+          className="absolute top-2 right-2 z-10 rounded-full bg-background/50 backdrop-blur-md"
           onClick={onClose}
         >
           <X className="w-5 h-5" />

@@ -1,4 +1,4 @@
-import { User, BarChart3, Settings, Info } from "lucide-react";
+import { User, BarChart3, Settings, LogOut } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -9,9 +9,10 @@ interface ProfilePageProps {
     movies: number;
     books: number;
   };
+  onLogout: () => void;
 }
 
-export default function ProfilePage({ mediaCount }: ProfilePageProps) {
+export default function ProfilePage({ mediaCount, onLogout }: ProfilePageProps) {
   const total = mediaCount.shows + mediaCount.movies + mediaCount.books;
 
   return (
@@ -72,7 +73,7 @@ export default function ProfilePage({ mediaCount }: ProfilePageProps) {
           </Card>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 space-y-3">
           <Button
             variant="outline"
             className="w-full"
@@ -80,6 +81,15 @@ export default function ProfilePage({ mediaCount }: ProfilePageProps) {
             data-testid="button-clear-library"
           >
             Clear Library
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={onLogout}
+            data-testid="button-logout"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
           </Button>
         </div>
       </div>

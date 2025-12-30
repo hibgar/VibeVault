@@ -2,7 +2,7 @@
 
 ## Overview
 
-VibeMedia is a personal media tracking application that allows users to catalog their shows, movies, and books while associating them with mood-based "vibes" for discovery. The app features a mobile-first design with bottom navigation, media library management, and a vibe-based recommendation system.
+VibeMedia is a personal media tracking application that allows users to catalog their shows, movies, and books while associating them with mood-based "vibes" for discovery. The app features a mobile-first design with bottom navigation, user authentication, media library management, and a vibe-based recommendation system.
 
 ## User Preferences
 
