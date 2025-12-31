@@ -235,6 +235,7 @@ function AppContent() {
         <MediaDetailModal
           media={selectedMedia}
           onClose={() => setSelectedMedia(null)}
+          onRemove={handleRemoveMedia}
           onUpdateVibes={handleUpdateVibes}
           onUpdateStatus={handleUpdateStatus}
         />

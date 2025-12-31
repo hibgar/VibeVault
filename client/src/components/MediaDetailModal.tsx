@@ -1,4 +1,4 @@
-import { X, Film, Tv, BookOpen, Plus, CheckCircle2, PlayCircle, Circle } from "lucide-react";
+import { X, Film, Tv, BookOpen, Plus, CheckCircle2, PlayCircle, Circle, Trash2 } from "lucide-react";
 import { MediaItem, MediaStatus } from "./MediaCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface MediaDetailModalProps {
   media: MediaItem;
   onClose: () => void;
+  onRemove?: (id: string) => void;
   onUpdateVibes?: (mediaId: string, vibes: string[]) => void;
   onUpdateStatus?: (mediaId: string, status: MediaStatus) => void;
 }
@@ -28,6 +29,7 @@ const statusOptions: Array<{ id: MediaStatus; label: string; icon: typeof Circle
 export default function MediaDetailModal({
   media,
   onClose,
+  onRemove,
   onUpdateVibes,
   onUpdateStatus,
 }: MediaDetailModalProps) {
@@ -67,14 +69,32 @@ export default function MediaDetailModal({
       />
       
       <div className="relative bg-card border border-card-border rounded-3xl w-full md:max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-2 z-10 rounded-full bg-background/50 backdrop-blur-md"
-          onClick={onClose}
-        >
-          <X className="w-5 h-5" />
-        </Button>
+        <div className="absolute top-2 right-2 z-10 flex gap-1">
+          {onRemove && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full bg-background/50 backdrop-blur-md text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to delete this item?")) {
+                  onRemove(media.id);
+                  onClose();
+                }
+              }}
+              data-testid={`button-delete-modal-${media.id}`}
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full bg-background/50 backdrop-blur-md"
+            onClick={onClose}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
 
         <div className="p-8 space-y-8">
           <div className="flex gap-6 items-start">
