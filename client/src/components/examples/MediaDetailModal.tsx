@@ -10,6 +10,7 @@ export default function MediaDetailModalExample() {
     id: "1",
     title: "The Dark Mystery",
     type: "movie" as const,
+    status: "completed" as const,
     year: 2024,
     coverUrl: thrillerCover,
     vibes: ["Thrilling", "Mysterious", "Intense"],
@@ -22,7 +23,9 @@ export default function MediaDetailModalExample() {
         <MediaDetailModal
           media={mockMedia}
           onClose={() => setIsOpen(false)}
-          onUpdateVibes={(id, vibes) => console.log("Updated vibes:", id, vibes)}
+          onUpdateVibes={(id, vibes) =>
+            console.log("Updated vibes:", id, vibes)
+          }
         />
       )}
     </div>
