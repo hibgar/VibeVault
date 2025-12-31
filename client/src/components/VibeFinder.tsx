@@ -27,15 +27,23 @@ interface VibeFinderProps {
 }
 
 const statusFilters: { id: MediaStatus | "all"; label: string }[] = [
-  { id: "all", label: "All" },
+  { id: "all", label: "All Statuses" },
   { id: "completed", label: "Completed" },
   { id: "in_progress", label: "In Progress" },
   { id: "not_started", label: "Not Started" },
 ];
 
+const typeFilters: { id: "movie" | "show" | "book" | "all"; label: string }[] = [
+  { id: "all", label: "All Types" },
+  { id: "movie", label: "Movies" },
+  { id: "show", label: "Shows" },
+  { id: "book", label: "Books" },
+];
+
 export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<MediaStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<"movie" | "show" | "book" | "all">("all");
 
   // Get all unique vibes currently in the library
   const availableVibes = useMemo(() => {
@@ -52,18 +60,21 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
         v.toLowerCase() === selectedMood.toLowerCase()
       );
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-      return matchesMood && matchesStatus;
+      const matchesType = typeFilter === "all" || item.type === typeFilter;
+      return matchesMood && matchesStatus && matchesType;
     });
-  }, [media, selectedMood, statusFilter]);
+  }, [media, selectedMood, statusFilter, typeFilter]);
 
   const handleMoodSelect = (mood: string) => {
     setSelectedMood(mood);
     setStatusFilter("all");
+    setTypeFilter("all");
   };
 
   const handleReset = () => {
     setSelectedMood(null);
     setStatusFilter("all");
+    setTypeFilter("all");
   };
 
   return (
@@ -111,22 +122,44 @@ export default function VibeFinder({ media, onMediaClick }: VibeFinderProps) {
               </Button>
             </div>
             
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              {statusFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setStatusFilter(filter.id)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap transition-all border",
-                    statusFilter === filter.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
-                  )}
-                >
-                  {filter.label}
-                </button>
-              ))}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                {statusFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setStatusFilter(filter.id)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap transition-all border",
+                      statusFilter === filter.id
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                    )}
+                    data-testid={`button-filter-status-${filter.id}`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <div className="w-3.5 h-3.5 shrink-0" /> {/* Spacer to align with top row's icon */}
+                {typeFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setTypeFilter(filter.id)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap transition-all border",
+                      typeFilter === filter.id
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                    )}
+                    data-testid={`button-filter-type-${filter.id}`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">

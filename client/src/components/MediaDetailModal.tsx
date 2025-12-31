@@ -1,4 +1,14 @@
-import { X, Film, Tv, BookOpen, Plus, CheckCircle2, PlayCircle, Circle, Trash2 } from "lucide-react";
+import {
+  X,
+  Film,
+  Tv,
+  BookOpen,
+  Plus,
+  CheckCircle2,
+  PlayCircle,
+  Circle,
+  Trash2,
+} from "lucide-react";
 import { MediaItem, MediaStatus } from "./MediaCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +30,11 @@ const typeIcons = {
   book: BookOpen,
 };
 
-const statusOptions: Array<{ id: MediaStatus; label: string; icon: typeof Circle }> = [
+const statusOptions: Array<{
+  id: MediaStatus;
+  label: string;
+  icon: typeof Circle;
+}> = [
   { id: "not_started", label: "Not Started", icon: Circle },
   { id: "in_progress", label: "In Progress", icon: PlayCircle },
   { id: "completed", label: "Completed", icon: CheckCircle2 },
@@ -67,7 +81,7 @@ export default function MediaDetailModal({
         className="absolute inset-0 bg-background/60 backdrop-blur-md"
         onClick={onClose}
       />
-      
+
       <div className="relative bg-card border border-card-border rounded-3xl w-full md:max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="absolute top-2 right-2 z-10 flex gap-1">
           {onRemove && (
@@ -76,10 +90,10 @@ export default function MediaDetailModal({
               size="icon"
               className="rounded-full bg-background/50 backdrop-blur-md text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={() => {
-                if (window.confirm("Are you sure you want to delete this item?")) {
-                  onRemove(media.id);
-                  onClose();
-                }
+                //if (window.confirm("Are you sure you want to delete this item?")) {
+                onRemove(media.id);
+                onClose();
+                //}
               }}
               data-testid={`button-delete-modal-${media.id}`}
             >
@@ -100,7 +114,11 @@ export default function MediaDetailModal({
           <div className="flex gap-6 items-start">
             <div className="w-24 aspect-[4/5] bg-muted/30 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner border border-card-border/50">
               {media.coverUrl ? (
-                <img src={media.coverUrl} alt={media.title} className="w-full h-full object-cover" />
+                <img
+                  src={media.coverUrl}
+                  alt={media.title}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center opacity-20">
                   <Icon className="w-8 h-8" />
@@ -109,10 +127,17 @@ export default function MediaDetailModal({
             </div>
             <div className="space-y-3 pt-1">
               <div className="flex gap-2">
-                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest border-primary/20 bg-primary/5 text-primary">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-bold uppercase tracking-widest border-primary/20 bg-primary/5 text-primary"
+                >
                   {media.type}
                 </Badge>
-                {media.year && <span className="text-xs text-muted-foreground font-medium">{media.year}</span>}
+                {media.year && (
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {media.year}
+                  </span>
+                )}
               </div>
               <h2 className="text-2xl font-bold tracking-tight leading-tight">
                 {media.title}
@@ -121,7 +146,9 @@ export default function MediaDetailModal({
           </div>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Current Status</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              Current Status
+            </label>
             <div className="flex gap-2">
               {statusOptions.map((option) => {
                 const StatusIcon = option.icon;
@@ -137,11 +164,13 @@ export default function MediaDetailModal({
                       "flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all border shadow-sm",
                       isActive
                         ? "bg-foreground text-background border-foreground"
-                        : "bg-background/50 text-muted-foreground border-card-border hover:bg-muted/50"
+                        : "bg-background/50 text-muted-foreground border-card-border hover:bg-muted/50",
                     )}
                   >
                     <StatusIcon className="w-4 h-4" />
-                    <span className="text-[9px] font-bold uppercase whitespace-nowrap">{option.label}</span>
+                    <span className="text-[9px] font-bold uppercase whitespace-nowrap">
+                      {option.label}
+                    </span>
                   </button>
                 );
               })}
@@ -150,8 +179,12 @@ export default function MediaDetailModal({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between ml-1">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Vibe Collection</label>
-              <span className="text-[10px] font-bold text-muted-foreground/50">{vibes.length} TAGS</span>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Vibe Collection
+              </label>
+              <span className="text-[10px] font-bold text-muted-foreground/50">
+                {vibes.length} TAGS
+              </span>
             </div>
 
             <div className="flex flex-wrap gap-2 min-h-[2rem]">
