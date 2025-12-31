@@ -5,7 +5,7 @@
       "src": "server/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["dist/**", "client/dist/**", "client/assets/**"]
+        "includeFiles": ["server/**", "shared/**", "dist/**", "client/dist/**", "client/assets/**"]
       }
     }
   ],
