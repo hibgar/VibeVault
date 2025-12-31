@@ -23,21 +23,30 @@ const categories = [
 ];
 
 const statuses = [
-  { id: "all" as StatusFilter, label: "All Status" },
+  { id: "all" as StatusFilter, label: "All" },
   { id: "not_started" as StatusFilter, label: "Not Started" },
   { id: "in_progress" as StatusFilter, label: "In Progress" },
   { id: "completed" as StatusFilter, label: "Completed" },
 ];
 
-export default function MediaLibrary({ media, onRemove, onMediaClick, onAddClick }: MediaLibraryProps) {
+export default function MediaLibrary({
+  media,
+  onRemove,
+  onMediaClick,
+  onAddClick,
+}: MediaLibraryProps) {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [activeStatus, setActiveStatus] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredMedia = media.filter((item) => {
-    const matchesCategory = activeCategory === "all" || item.type === activeCategory;
-    const matchesStatus = activeStatus === "all" || item.status === activeStatus;
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      activeCategory === "all" || item.type === activeCategory;
+    const matchesStatus =
+      activeStatus === "all" || item.status === activeStatus;
+    const matchesSearch = item.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     return matchesCategory && matchesStatus && matchesSearch;
   });
 
@@ -69,7 +78,7 @@ export default function MediaLibrary({ media, onRemove, onMediaClick, onAddClick
                       "px-3 py-1 rounded-full text-[11px] font-bold uppercase transition-all border",
                       isActive
                         ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50"
+                        : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50",
                     )}
                   >
                     {cat.label}
@@ -88,7 +97,7 @@ export default function MediaLibrary({ media, onRemove, onMediaClick, onAddClick
                       "px-3 py-1 rounded-full text-[11px] font-bold uppercase transition-all border",
                       isActive
                         ? "bg-foreground text-background border-foreground shadow-sm"
-                        : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50"
+                        : "bg-muted/30 text-muted-foreground border-transparent hover:bg-muted/50",
                     )}
                   >
                     {status.label}
@@ -103,7 +112,11 @@ export default function MediaLibrary({ media, onRemove, onMediaClick, onAddClick
       <div className="flex-1 overflow-y-auto p-4">
         {filteredMedia.length === 0 ? (
           <EmptyState
-            icon={activeCategory === "all" ? Film : categories.find(c => c.id === activeCategory)?.icon || Film}
+            icon={
+              activeCategory === "all"
+                ? Film
+                : categories.find((c) => c.id === activeCategory)?.icon || Film
+            }
             title="No matches"
             description="Try adjusting your filters or search terms"
             actionLabel="Clear Filters"
