@@ -10,6 +10,7 @@ const mockMedia: MediaItem[] = [
     id: "1",
     title: "The Dark Mystery",
     type: "movie",
+    status: "completed",
     year: 2024,
     coverUrl: thrillerCover,
     vibes: ["Thrilling", "Mysterious", "Intense"],
@@ -18,6 +19,7 @@ const mockMedia: MediaItem[] = [
     id: "2",
     title: "Cozy Reads",
     type: "book",
+    status: "in_progress",
     year: 2023,
     coverUrl: bookCover,
     vibes: ["Cozy", "Thoughtful", "Warm"],
@@ -26,6 +28,7 @@ const mockMedia: MediaItem[] = [
     id: "3",
     title: "Happy Days",
     type: "show",
+    status: "not_started",
     year: 2024,
     coverUrl: showCover,
     vibes: ["Lighthearted", "Fun", "Uplifting"],
@@ -41,7 +44,7 @@ export default function MediaLibraryExample() {
         media={media}
         onRemove={(id) => {
           console.log("Remove:", id);
-          setMedia(media.filter(m => m.id !== id));
+          setMedia(media.filter((m) => m.id !== id));
         }}
         onMediaClick={(m) => console.log("Clicked:", m)}
         onAddClick={() => console.log("Add clicked")}

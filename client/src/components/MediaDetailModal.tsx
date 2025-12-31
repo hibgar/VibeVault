@@ -33,11 +33,13 @@ export default function MediaDetailModal({
 }: MediaDetailModalProps) {
   const Icon = typeIcons[media.type];
   const [vibes, setVibes] = useState(media.vibes);
+  const [status, setStatus] = useState(media.status);
   const [newVibe, setNewVibe] = useState("");
 
   useEffect(() => {
     setVibes(media.vibes);
-  }, [media.vibes]);
+    setStatus(media.status);
+  }, [media.vibes, media.status]);
 
   const handleAddVibe = () => {
     if (!newVibe.trim()) return;
@@ -101,13 +103,16 @@ export default function MediaDetailModal({
           <div className="space-y-4">
             <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Current Status</label>
             <div className="flex gap-2">
-              {statusOptions.map((status) => {
-                const StatusIcon = status.icon;
-                const isActive = media.status === status.id;
+              {statusOptions.map((option) => {
+                const StatusIcon = option.icon;
+                const isActive = status === option.id;
                 return (
                   <button
-                    key={status.id}
-                    onClick={() => onUpdateStatus?.(media.id, status.id)}
+                    key={option.id}
+                    onClick={() => {
+                      setStatus(option.id);
+                      onUpdateStatus?.(media.id, option.id);
+                    }}
                     className={cn(
                       "flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all border shadow-sm",
                       isActive
@@ -116,7 +121,7 @@ export default function MediaDetailModal({
                     )}
                   >
                     <StatusIcon className="w-4 h-4" />
-                    <span className="text-[9px] font-bold uppercase whitespace-nowrap">{status.label}</span>
+                    <span className="text-[9px] font-bold uppercase whitespace-nowrap">{option.label}</span>
                   </button>
                 );
               })}

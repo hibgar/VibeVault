@@ -9,6 +9,7 @@ export default function MediaCardExample() {
           id: "1",
           title: "The Dark Mystery",
           type: "movie",
+          status: "completed",
           year: 2024,
           coverUrl: thrillerCover,
           vibes: ["Thrilling", "Mysterious", "Intense"],
