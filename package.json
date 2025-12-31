@@ -107,5 +107,8 @@
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.0.0",
     "bufferutil": "^4.0.8"
+  },
+  "resolutions": {
+    "@rollup/rollup-linux-x64-gnu": "npm:@rollup/rollup"
   }
 }
