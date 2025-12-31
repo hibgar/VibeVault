@@ -47,7 +47,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Error handler middleware
+// Error handler middleware - must be after routes but before async init
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
@@ -62,41 +62,71 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // Check if we're running in Vercel serverless environment
 const isVercel = !!process.env.VERCEL;
 
-// Initialize the app based on environment
-(async () => {
-  if (isVercel) {
-    // Vercel Serverless Function mode
-    // Register routes (server is not needed in Vercel)
-    await registerRoutes(app);
-    // Setup static file serving for production
-    serveStatic(app);
-    // Note: We don't start a server in Vercel - it handles that for us
-  } else {
-    // Local development mode - start a server
-    const server = await registerRoutes(app);
-    // importantly only setup vite in development and after
-    // setting up all the other routes so the catch-all route
-    // doesn't interfere with the other routes
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
+// Track initialization state
+let isInitialized = false;
+let initError: Error | null = null;
 
-    // ALWAYS serve the app on the port specified in the environment variable PORT
-    // Other ports are firewalled. Default to 5000 if not specified.
-    // this serves both the API and the client.
-    // It is the only port that is not firewalled.
-    const port = parseInt(process.env.PORT || '5000', 10);
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`serving on port ${port}`);
+// Initialize the app based on environment
+// Wrap in try-catch to handle any initialization errors
+(async () => {
+  try {
+    if (isVercel) {
+      // Vercel Serverless Function mode
+      // Register routes (server is not needed in Vercel)
+      await registerRoutes(app);
+      // Setup static file serving for production
+      serveStatic(app);
+      // Note: We don't start a server in Vercel - it handles that for us
+    } else {
+      // Local development mode - start a server
+      const server = await registerRoutes(app);
+      // importantly only setup vite in development and after
+      // setting up all the other routes so the catch-all route
+      // doesn't interfere with the other routes
+      if (app.get("env") === "development") {
+        await setupVite(app, server);
+      } else {
+        serveStatic(app);
+      }
+
+      // ALWAYS serve the app on the port specified in the environment variable PORT
+      // Other ports are firewalled. Default to 5000 if not specified.
+      // this serves both the API and the client.
+      // It is the only port that is not firewalled.
+      const port = parseInt(process.env.PORT || '5000', 10);
+      server.listen({
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, () => {
+        log(`serving on port ${port}`);
+      });
+    }
+    isInitialized = true;
+  } catch (error) {
+    console.error("Failed to initialize app:", error);
+    initError = error instanceof Error ? error : new Error(String(error));
+    // Add a catch-all error handler for initialization failures
+    app.use("*", (_req, res) => {
+      res.status(500).json({ 
+        error: "Initialization failed",
+        message: initError?.message || "Unknown error",
+        details: process.env.NODE_ENV === "development" ? initError?.stack : undefined
+      });
     });
   }
 })();
+
+// Add a middleware to handle requests before initialization completes
+app.use((_req, res, next) => {
+  if (!isInitialized && initError) {
+    return res.status(500).json({
+      error: "Initialization failed",
+      message: initError.message
+    });
+  }
+  next();
+});
 
 // Export the Express app as the handler for Vercel
 // Vercel will invoke this handler for each request

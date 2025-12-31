@@ -72,12 +72,24 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  // In Vercel, the dist folder is at the root level
+  // __dirname in compiled JS will be /var/task/server, so we go up one level
+  const distPath = path.resolve(__dirname, "..", "dist");
 
+  // Don't throw if dist doesn't exist - just log and continue
+  // This allows the app to still serve API routes even if static files aren't built
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+    console.warn(
+      `Warning: Could not find the build directory: ${distPath}. Static files will not be served.`,
     );
+    // Still set up a catch-all to return a helpful message
+    app.use("*", (_req, res) => {
+      res.status(404).json({ 
+        error: "Not found",
+        message: "Static files not found. Make sure to build the client first."
+      });
+    });
+    return;
   }
 
   app.use(express.static(distPath));
