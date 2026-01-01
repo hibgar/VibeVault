@@ -7,7 +7,7 @@
     "dev": "tsx server/index.ts",
     "build": "vite build",
     "start": "node dist/index.js",
-    "vercel-build": "npm install @rollup/rollup-linux-x64-gnu && vite build",
+    "vercel-build": "vite build",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
@@ -99,17 +99,12 @@
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
-    "rollup": "^3.29.4",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
     "vite": "^7.3.0"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.0.0",
     "bufferutil": "^4.0.8"
-  },
-  "resolutions": {
-    "@rollup/rollup-linux-x64-gnu": "npm:@rollup/rollup"
   }
 }
