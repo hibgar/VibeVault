@@ -35,10 +35,7 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {
-      external: [
-        "@supabase/supabase-js",
-        "@rollup/rollup-linux-x64-gnu"
-        ],
+      external: ["@supabase/supabase-js"],
     },
   },
   server: {
