@@ -78,7 +78,7 @@ export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) 
         )}
       </div>
       <div className="px-2 pb-2 space-y-1">
-        <h3 className="font-semibold text-xs line-clamp-1 leading-tight" data-testid={`text-title-${media.id}`}>
+        <h3 className="font-semibold text-sm line-clamp-1 leading-tight" data-testid={`text-title-${media.id}`}>
           {media.title}
         </h3>
         <div className="flex flex-wrap gap-1">
