@@ -59,7 +59,7 @@ export default function MediaCard({ media, onRemove, onClick }: MediaCardProps) 
           />
         ) : (
           <div className={cn("w-full h-full flex items-center justify-center", typeColors[media.type])}>
-            <Icon className="w-6 h-6 opacity-40" />
+            <Icon className="w-8 h-8 opacity-40" />
           </div>
         )}
         {onRemove && (
